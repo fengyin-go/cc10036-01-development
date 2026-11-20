@@ -77,5 +77,22 @@ npm run dev
 - 列表接口统一返回 `{ items, total, page, size }`，动作接口统一返回 `{ ok, message }`。
 - 状态流转只允许在 `app/services` 里改，路由层不做业务判断。
 
+## 复算前沿与调度详情（数据血缘 → 查询调度）
+
+血缘节点名单之外，平台提供按下游血缘路径计算复算前沿的视图：
+
+- 前端「复算前沿」页（`/recompute-frontier`，`RecomputeFrontierView.vue`）：从血缘图
+  选择变更表并提交变更批，后端 `app/services/recompute.py` 沿下游血缘路径派生
+  **复算节点数据集**，逐派生表列出等待的分区、可执行项与欠缺的上游分区；
+  晚到分区在分区送达后自动刷新前沿。
+- 调度详情页（`/query_scheduler/recompute/:batchId`，`ScheduleDetailView.vue`）：
+  排程通过 `QuerySchedulerService.schedule_recompute_batch` 接收复算节点数据集，
+  逐表区分可执行/执行中/等待/已完成。汇总类节点（如经营汇总）缺任一上游分区时
+  拒绝提前开跑；同一变更批的同一节点+分区只保留一项任务，并发重复提交自动去重。
+- 接口前缀 `/api/lineage/recompute`：`POST /batches` 提交变更批、
+  `GET /batches/{id}` 复算节点数据集、`GET /batches/{id}/schedule` 调度详情、
+  `POST /batches/{id}/start|complete` 开跑/登记完成、
+  `POST /partitions/deliver` 晚到分区送达、`GET /frontier` 复算前沿。
+
 领域：数据工程
 子方向：数据分析与数据应用

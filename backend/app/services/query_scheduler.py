@@ -4,6 +4,13 @@ from __future__ import annotations
 from typing import Any
 
 from app.services.base import BaseModuleService
+from app.services.recompute import (
+    TASK_DONE,
+    TASK_RUNNABLE,
+    TASK_RUNNING,
+    TASK_WAITING,
+    recompute_manager,
+)
 from app.store import store
 
 
@@ -93,6 +100,41 @@ class QuerySchedulerService(BaseModuleService):
                     self.run_action(int(row["id"]), "开始执行")
                     retried += 1
         return {"ok": True, "retried_count": retried}
+
+    # ---- 复算节点数据集消费（数据血缘 → 查询调度） ----
+
+    def schedule_recompute_batch(self, batch_id: int) -> dict[str, Any]:
+        """排程接收复算节点数据集：逐表列出可执行项和欠缺的上游分区。
+
+        复算前沿（全部上游分区已齐）才允许开跑；缺分区的表保持等待，
+        汇总类节点在上游任一分区缺失时不得提前产出。
+        """
+        batch = recompute_manager.get_batch(batch_id)
+        if batch is None:
+            return {"ok": False, "message": f"变更批 {batch_id} 不存在"}
+        runnable: list[dict[str, Any]] = []
+        waiting: list[dict[str, Any]] = []
+        running: list[dict[str, Any]] = []
+        done: list[dict[str, Any]] = []
+        for task in batch.tasks.values():
+            item = task.to_dict()
+            if task.state == TASK_RUNNABLE:
+                runnable.append(item)
+            elif task.state == TASK_WAITING:
+                waiting.append(item)
+            elif task.state == TASK_RUNNING:
+                running.append(item)
+            elif task.state == TASK_DONE:
+                done.append(item)
+        return {
+            "ok": True,
+            "batch": batch.to_dict(),
+            "runnable_tables": runnable,
+            "waiting_tables": waiting,
+            "running_tables": running,
+            "completed_tables": done,
+            "late_arrivals": recompute_manager.late_arrivals(),
+        }
 
     def domain_snapshot(self) -> dict[str, Any]:
         base = super().domain_snapshot()

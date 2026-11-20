@@ -364,6 +364,49 @@ SEED_ROWS: dict[str, list[dict[str, Any]]] = {
             "上游列表": "5,7", "下游列表": "",
             "数据量级": "1MB/月", "更新频率": "实时", "负责人": "管理组",
         },
+        # ---- 订单变更复算链路：同一批订单改动沿两条血缘路径，最终汇聚到经营汇总 ----
+        {
+            "id": 10, "status": "在线", "pending": False, "abnormal": False,
+            "节点名称": "ods_order_change", "节点类型": "table",
+            "上游列表": "", "下游列表": "11,12",
+            "数据量级": "80GB/月", "更新频率": "每日", "负责人": "交易平台组",
+        },
+        {
+            "id": 11, "status": "在线", "pending": False, "abnormal": False,
+            "节点名称": "dwd_store_order_detail", "节点类型": "table",
+            "上游列表": "10", "下游列表": "13",
+            "数据量级": "60GB/月", "更新频率": "每日", "负责人": "交易平台组",
+        },
+        {
+            "id": 12, "status": "在线", "pending": False, "abnormal": False,
+            "节点名称": "dwd_channel_order_detail", "节点类型": "table",
+            "上游列表": "10,16", "下游列表": "14",
+            "数据量级": "55GB/月", "更新频率": "每日", "负责人": "渠道平台组",
+        },
+        {
+            "id": 13, "status": "在线", "pending": False, "abnormal": False,
+            "节点名称": "dws_store_daily", "节点类型": "table",
+            "上游列表": "11", "下游列表": "15",
+            "数据量级": "5GB/月", "更新频率": "每日", "负责人": "数据仓库组",
+        },
+        {
+            "id": 14, "status": "在线", "pending": False, "abnormal": False,
+            "节点名称": "dws_channel_daily", "节点类型": "table",
+            "上游列表": "12", "下游列表": "15",
+            "数据量级": "4GB/月", "更新频率": "每日", "负责人": "数据仓库组",
+        },
+        {
+            "id": 15, "status": "在线", "pending": False, "abnormal": False,
+            "节点名称": "ads_business_summary", "节点类型": "table",
+            "上游列表": "13,14", "下游列表": "",
+            "数据量级": "500MB/月", "更新频率": "每日", "负责人": "经营分析组",
+        },
+        {
+            "id": 16, "status": "在线", "pending": False, "abnormal": False,
+            "节点名称": "ods_channel_settlement", "节点类型": "table",
+            "上游列表": "", "下游列表": "12",
+            "数据量级": "20GB/月", "更新频率": "每日（晚到）", "负责人": "渠道平台组",
+        },
     ],
 
     # ---- 查询调度 ----
